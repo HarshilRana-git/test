@@ -21,13 +21,13 @@ export function App() {
 
   const loadAllTransactions = useCallback(async () => {
     setIsLoading(true)
-    transactionsByEmployeeUtils.invalidateData()
+    // transactionsByEmployeeUtils.invalidateData()
 
     await employeeUtils.fetchAll()
-    await paginatedTransactionsUtils.fetchAll()
+    setIsLoading(false) //set the loading false after fetch all. (bug fixes)  
 
-    setIsLoading(false)
-  }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
+    await paginatedTransactionsUtils.fetchAll()
+  }, [employeeUtils, paginatedTransactionsUtils])
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
@@ -64,8 +64,12 @@ export function App() {
             if (newValue === null) {
               return
             }
-
-            await loadTransactionsByEmployee(newValue.id)
+            // Shift from an employee to all employees doesn't crashes the page (bug resolved)
+            if (newValue.id !== "") {
+              await loadTransactionsByEmployee(newValue.id)
+            } else {
+              await loadAllTransactions()
+            }
           }}
         />
 
@@ -77,7 +81,7 @@ export function App() {
           {transactions !== null && (
             <button
               className="RampButton"
-              disabled={paginatedTransactionsUtils.loading}
+              disabled={paginatedTransactionsUtils.loading || paginatedTransactions?.nextPage == null} // // paginatedTransactions resolved bugs
               onClick={async () => {
                 await loadAllTransactions()
               }}
